@@ -200,7 +200,7 @@ if __name__ == '__main__':
             
             
             
-        if epoch % 1000 == 0 and epoch>0: # VALIDATION
+        if epoch % 10000 == 0 and epoch>0: # VALIDATION
             
 
             print(f"Validation in progress... Current lr is: {model.optimizers[0].param_groups[0]['lr']}")
@@ -473,7 +473,8 @@ if __name__ == '__main__':
                     
                     
                     # Convert continuous values to binary class labels
-                    fake_gauge_vec_det_labels = (fake_gauge_vec_det >= probability_threshold).astype(int)
+                    fake_gauge_vec_det_labels = (fake_gauge_vec_det >= probability_threshold ).astype(int)
+                    # fake_gauge_vec_det_labels = (fake_gauge_vec_det_labels & fake_gauge_vec >= threshold ).astype(int)
                     real_gauge_vec_labels = (real_gauge_vec >= threshold).astype(int)
                     
                     CM=confusion_matrix(real_gauge_vec_labels,fake_gauge_vec_det_labels)
@@ -555,7 +556,7 @@ if __name__ == '__main__':
             if ENABLE_WANDB:
 #                 wandb.log({"Real vs Fake": rain_fig})
                 for key in current_losses:
-                    training_losses[key] = training_losses[key]/(1000*len(train_dataset))
+                    training_losses[key] = training_losses[key]/(10000*len(train_dataset))
             
                 wandb.log({**training_losses})
                 path_to_html = f"{v.out_path}/{v.map_name}"

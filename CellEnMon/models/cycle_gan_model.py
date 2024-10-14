@@ -48,7 +48,7 @@ class CycleGANModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         self.noise = torch.zeros(64, device="cuda:0")
-        self.noise[0]=0.01
+        self.noise[32]=0.000001
         dataset_type_str="Train" if self.isTrain else "Validation"
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['cycle_A', 'G_B', 'cycle_B', 'mse_A', 'mse_B', 'bce_B'] #'D_A', 'D_B', 'G_A','G_B_only'
@@ -143,6 +143,7 @@ class CycleGANModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""          
+        relu=nn.ReLU()
         ## >> B
         fake_B = self.netG_A(self.real_A, dir="AtoB")   # G_A(A)
 
@@ -150,15 +151,15 @@ class CycleGANModel(BaseModel):
         
         self.fake_B_det = fake_B[1]
         self.fake_B_det_sigmoid = torch.sigmoid(self.fake_B_det)
-        self.fake_B_sigmoid=torch.sigmoid(self.fake_B) * self.fake_B_det_sigmoid
+        self.fake_B_sigmoid=relu(self.fake_B) * self.fake_B_det_sigmoid
 
         ## >> A
         self.rec_A = self.netG_B(self.fake_B, dir="BtoA") #self.norm_zero_one()
-        self.rec_A_sigmoid=torch.sigmoid(self.rec_A)
+        self.rec_A_sigmoid=relu(self.rec_A)
         self.fake_A = self.netG_B(self.real_B,dir="BtoA") #self.norm_zero_one()  # G_B(B)
-        self.fake_A_sigmoid=torch.sigmoid(self.fake_A)
+        self.fake_A_sigmoid=relu(self.fake_A)
         self.rec_B = self.netG_A(self.fake_A,dir="AtoB")[0] #self.norm_zero_one()  # G_A(G_B(B))
-        self.rec_B_sigmoid=torch.sigmoid(self.rec_B)
+        self.rec_B_sigmoid=relu(self.rec_B)
         
         
         
@@ -199,8 +200,8 @@ class CycleGANModel(BaseModel):
     def backward_G(self):
         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
-        lambda_A = 10
-        lambda_B = 10
+        lambda_A = 0.1
+        lambda_B = 0.1
         # Identity loss
         if lambda_idt > 0:
 
@@ -218,7 +219,7 @@ class CycleGANModel(BaseModel):
         
         self.rr_norm = self.alpha + 1 - self.rain_rate_prob
         self.att_norm = self.alpha + 1 - self.attenuation_prob
-        const=81.66 if self.dataset_type=="Train" else 1 #33.44
+        const=50 if self.dataset_type=="Train" else 1 #Train: 81.66 | Validation: 33.44
         pos_weight = torch.tensor([const], dtype=torch.float32, device="cuda:0") # wet event is x times more important (!!!)
         
 
@@ -271,7 +272,7 @@ class CycleGANModel(BaseModel):
         self.loss_cycle_B = lambda_B * torch.sum(self.criterionCycle(self.rec_B_sigmoid, self.real_B) * self.rr_norm) #* self.rr_norm
         
         # combined loss and calculate gradients
-        self.loss_G = self.loss_cycle_B + self.loss_cycle_A + self.loss_bce_B #+ 0.001 * (self.loss_G_B_only + self.loss_G_A) #+ self.loss_idt_A + self.loss_idt_B
+        self.loss_G = self.loss_cycle_B + self.loss_cycle_A + 10.0 * self.loss_bce_B #+ 0.001 * (self.loss_G_B_only + self.loss_G_A) #+ self.loss_idt_A + self.loss_idt_B
         if self.isTrain:
             self.loss_G.backward()
         self.loss_mse_A = self.mse(self.fake_A_sigmoid, self.real_A)

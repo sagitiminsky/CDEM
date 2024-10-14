@@ -34,7 +34,7 @@ class BaseOptions():
         parser.add_argument('--output_nc_A', type=int, default=2, help='# of output channels') # in the output we want to duplicate the 64 vector | one for regression the other for classification, so 4x64->2x64
         parser.add_argument('--input_nc_B', type=int, default=1, help='# of input channels')
         parser.add_argument('--output_nc_B', type=int, default=4, help='# of output channels') # here we go from Rain to Att, so 1x64->4x64
-        parser.add_argument('--ngf', type=int, default=1024, help='# of gen filters in the last conv layer')
+        parser.add_argument('--ngf', type=int, default=256, help='# of gen filters in the last conv layer')
         parser.add_argument('--ndf', type=int, default=16, help='# of discrim filters in the first conv layer')
         parser.add_argument('--netD', type=str, default='n_layers',
                             help='specify discriminator architecture [n_layers]. n_layers allows you to specify the layers in the discriminator')
