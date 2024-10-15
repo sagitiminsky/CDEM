@@ -106,7 +106,7 @@ class CycleGANModel(BaseModel):
         """
         AtoB = self.opt.direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device) if isTrain else input["attenuation_sample" if AtoB else 'rain_rate_sample'].to(self.device)
-        self.real_B = input['B' if AtoB else 'A'].to(self.device) if isTrain else input['rain_rate_sample' if AtoB else 'attenuation_sample'].to(self.device) + self.noise
+        self.real_B = input['B' if AtoB else 'A'].to(self.device) if isTrain else input['rain_rate_sample' if AtoB else 'attenuation_sample'].to(self.device) #+ self.noise
         self.gague = input['gague']
         self.link = input['link']
         self.t = input['Time']
@@ -151,15 +151,15 @@ class CycleGANModel(BaseModel):
         
         self.fake_B_det = fake_B[1]
         self.fake_B_det_sigmoid = torch.sigmoid(self.fake_B_det)
-        self.fake_B_sigmoid=relu(self.fake_B) * self.fake_B_det_sigmoid
+        self.fake_B_sigmoid=torch.sigmoid(self.fake_B) * self.fake_B_det_sigmoid
 
         ## >> A
         self.rec_A = self.netG_B(self.fake_B, dir="BtoA") #self.norm_zero_one()
-        self.rec_A_sigmoid=relu(self.rec_A)
+        self.rec_A_sigmoid=torch.sigmoid(self.rec_A)
         self.fake_A = self.netG_B(self.real_B,dir="BtoA") #self.norm_zero_one()  # G_B(B)
-        self.fake_A_sigmoid=relu(self.fake_A)
+        self.fake_A_sigmoid=torch.sigmoid(self.fake_A)
         self.rec_B = self.netG_A(self.fake_A,dir="AtoB")[0] #self.norm_zero_one()  # G_A(G_B(B))
-        self.rec_B_sigmoid=relu(self.rec_B)
+        self.rec_B_sigmoid=torch.sigmoid(self.rec_B)
         
         
         
@@ -200,8 +200,8 @@ class CycleGANModel(BaseModel):
     def backward_G(self):
         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
-        lambda_A = 0.1
-        lambda_B = 0.1
+        lambda_A = 10
+        lambda_B = 10
         # Identity loss
         if lambda_idt > 0:
 
@@ -219,15 +219,19 @@ class CycleGANModel(BaseModel):
         
         self.rr_norm = self.alpha + 1 - self.rain_rate_prob
         self.att_norm = self.alpha + 1 - self.attenuation_prob
-        const=50 if self.dataset_type=="Train" else 1 #Train: 81.66 | Validation: 33.44
+        const=81.66 if self.dataset_type=="Train" else 1 #Train: 81.66 | Validation: 33.44
         pos_weight = torch.tensor([const], dtype=torch.float32, device="cuda:0") # wet event is x times more important (!!!)
         
 
         targets=(self.real_B >= 0.0909).float() # 0.3/3.3=0.0909, ie. we consider a wet event over 
-        bce_weight_loss=nn.BCEWithLogitsLoss(pos_weight=pos_weight, reduction='none') #,  | << more numerically stable
-        bce_criterion = torch.nn.BCELoss(weight=self.rr_norm)
+        bce_weight_loss=nn.BCEWithLogitsLoss(reduction='none') #pos_weight=pos_weight,  | << more numerically stable
+
+        #adjust for type-1 erros
+        adjusted_weights=self.rr_norm.clone()
+        adjusted_weights[(self.fake_B_det_sigmoid > 0.016) & (targets==0)] *= 10
+
         
-        self.loss_bce_B=torch.sum(bce_weight_loss(self.fake_B_det, targets) * self.rr_norm)
+        self.loss_bce_B=torch.sum(bce_weight_loss(self.fake_B_det, targets) * adjusted_weights)
         
         self.D_B=self.netD_B(self.fake_B_sigmoid)
         self.loss_G_B_only=self.criterionGAN(self.D_B, True) # weight=self.rr_norm.max()
@@ -272,7 +276,7 @@ class CycleGANModel(BaseModel):
         self.loss_cycle_B = lambda_B * torch.sum(self.criterionCycle(self.rec_B_sigmoid, self.real_B) * self.rr_norm) #* self.rr_norm
         
         # combined loss and calculate gradients
-        self.loss_G = self.loss_cycle_B + self.loss_cycle_A + 10.0 * self.loss_bce_B #+ 0.001 * (self.loss_G_B_only + self.loss_G_A) #+ self.loss_idt_A + self.loss_idt_B
+        self.loss_G = self.loss_cycle_B + self.loss_cycle_A + 10 * self.loss_bce_B #+ 0.001 * (self.loss_G_B_only + self.loss_G_A) #+ self.loss_idt_A + self.loss_idt_B
         if self.isTrain:
             self.loss_G.backward()
         self.loss_mse_A = self.mse(self.fake_A_sigmoid, self.real_A)
