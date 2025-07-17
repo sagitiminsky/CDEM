@@ -331,11 +331,10 @@ class CycleGANModel(BaseModel):
         # BCE for detector
         self.loss_bce_rec_B  = gamma * BCE(self.rec_B_det, targets)
 
-        if self.loss_bce_rec_B > 1000:
-            print(f"rec_B_det: {self.rec_B_det}")
-            print(f"targets: {targets}")
-            print(f"rain_rate_prob: {self.rain_rate_prob}")
-            assert(False)
+        # if self.loss_bce_rec_B > 1000:
+            # print(f"rec_B_det: {self.rec_B_det}")
+            # print(f"targets: {targets}")
+            # print(f"rain_rate_prob: {self.rain_rate_prob}")
             # Make sure to set LAMBDA properly,
             # a good place to start Israel: 1 | Ducth: 0.1
 

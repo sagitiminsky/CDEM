@@ -311,7 +311,7 @@ if __name__ == '__main__':
                                     
                                     #to_add,seq_len_add,real_vec_add,fake_vec_add,T_add=v.real_and_fake_metric(path_to_real_gauge,file_path)
                             
-                                    print(f"to add:{to_add}")
+                                    # print(f"to add:{to_add}")
                                     real_fake_gauge_metric[f"{link}-{'260'}"]+=to_add
                                     seq_len+=len(cond)
                                     real_gauge_vec=np.append(real_gauge_vec,real_rain_add[cond])
@@ -329,9 +329,9 @@ if __name__ == '__main__':
 
 
                 if f"{link}-{'260'}" in real_fake_gauge_metric and real_fake_gauge_metric[f"{link}-{'260'}"]:
-                    print(f"len T:{len(T)}")
-                    print(f"len real_gauge_vec:{len(real_gauge_vec)}")
-                    print(f"len fake_gauge_vec:{len(fake_gauge_vec)}")
+                    # print(f"len T:{len(T)}")
+                    # print(f"len real_gauge_vec:{len(real_gauge_vec)}")
+                    # print(f"len fake_gauge_vec:{len(fake_gauge_vec)}")
                     wandb.log({f"RMSE-{link}-{'260'}":np.sqrt(real_fake_gauge_metric[f"{link}-{'260'}"]/seq_len)})
                     wandb.log({f"{link}-{'260'}" : wandb.plot.line_series(xs=range(len(T)), ys=[real_gauge_vec, fake_gauge_vec],keys=["real", "fake"],title=f"{link}-{'260'}",xname="Timestamp")})
             
