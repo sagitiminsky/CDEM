@@ -49,7 +49,7 @@ The following examples:
 
 
 # Model Zoo
-In this project we supply a set of trained networks in our [Model Zoo](s3://cellenmon/model-zoo/).
+In this project we supply a set of trained networks in our [Model Zoo](https://drive.google.com/drive/folders/1N04u-dNgQTqNmkJfew7l8w_cZ0ErXBiJ?usp=sharing).
 
 # Contributing
 If you find a bug or have a question, please create a GitHub issue.
