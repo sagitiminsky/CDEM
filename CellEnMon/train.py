@@ -516,4 +516,4 @@ if __name__ == '__main__':
 #                 wandb.log({"html": wandb.Html(open(path_to_html), inject=False)})
             print(print(f"Validation cycle end..."))
 
-        model.save_networks("latest")
+    model.save_networks("latest")
